@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func GetFileHash(fname string) (string, error) {
@@ -36,7 +37,7 @@ func GetDirHash(dir string) (map[string]string, error) {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%s: %s\n", path1, err.Error())
 			} else {
-				dict[file1.Name()] = hash1
+				dict[strings.ToUpper(file1.Name())] = hash1
 			}
 		}
 	}
