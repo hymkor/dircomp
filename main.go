@@ -101,15 +101,15 @@ func main1(args []string) error {
 				return err
 			}
 			if !same {
-				fmt.Printf("M\t%s\n", name)
+				fmt.Printf("M\t%s\n", filepath.Base(info1.Path))
 			}
 		} else {
-			fmt.Printf("D\t%s\n", name)
+			fmt.Printf("D\t%s\n", filepath.Base(info1.Path))
 		}
 	}
-	for name, _ := range dirlist2 {
+	for name, info2 := range dirlist2 {
 		if _, ok := dirlist1[name]; !ok {
-			fmt.Printf("A\t%s\n", name)
+			fmt.Printf("A\t%s\n", filepath.Base(info2.Path))
 		}
 	}
 	return nil
