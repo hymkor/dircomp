@@ -22,7 +22,27 @@ func GetFileHash(fname string) (string, error) {
 	return string(sum[:]), nil
 }
 
-func GetDirHash(dir string) (map[string]string, error) {
+type FileT struct {
+	Size int64
+	Path string
+}
+
+func (file1 FileT) Equals(file2 FileT) (bool, error) {
+	if file1.Size != file2.Size {
+		return false, nil
+	}
+	hash1, err := GetFileHash(file1.Path)
+	if err != nil {
+		return false, err
+	}
+	hash2, err := GetFileHash(file2.Path)
+	if err != nil {
+		return false, err
+	}
+	return hash1 == hash2, nil
+}
+
+func GetDirList(dir string) (map[string]FileT, error) {
 	fd, err := os.Open(dir)
 	if err != nil {
 		return nil, err
@@ -32,7 +52,7 @@ func GetDirHash(dir string) (map[string]string, error) {
 	if err != nil && err != io.EOF {
 		return nil, err
 	}
-	dict := map[string]string{}
+	dict := map[string]FileT{}
 	for _, file1 := range files {
 		if file1.IsDir() {
 			continue
@@ -48,11 +68,14 @@ func GetDirHash(dir string) (map[string]string, error) {
 			continue
 		}
 		path1 := filepath.Join(dir, file1.Name())
-		hash1, err := GetFileHash(path1)
+		stat1, err := os.Stat(path1)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %s\n", path1, err.Error())
 		} else {
-			dict[strings.ToUpper(file1.Name())] = hash1
+			dict[strings.ToUpper(file1.Name())] = FileT{
+				Size: stat1.Size(),
+				Path: path1,
+			}
 		}
 	}
 	return dict, nil
@@ -62,26 +85,30 @@ func main1(args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("Usage: %s DIR1 DIR2", os.Args[0])
 	}
-	dirhash1, err := GetDirHash(args[0])
+	dirlist1, err := GetDirList(args[0])
 	if err != nil {
 		return fmt.Errorf("%s: %s", args[0], err.Error())
 	}
-	dirhash2, err := GetDirHash(args[1])
+	dirlist2, err := GetDirList(args[1])
 	if err != nil {
 		return fmt.Errorf("%s: %s\n", args[1], err.Error())
 	}
 
-	for name, hash1 := range dirhash1 {
-		if hash2, ok := dirhash2[name]; ok {
-			if hash1 != hash2 {
+	for name, info1 := range dirlist1 {
+		if info2, ok := dirlist2[name]; ok {
+			same, err := info1.Equals(info2)
+			if err != nil {
+				return err
+			}
+			if !same {
 				fmt.Printf("M\t%s\n", name)
 			}
 		} else {
 			fmt.Printf("D\t%s\n", name)
 		}
 	}
-	for name, _ := range dirhash2 {
-		if _, ok := dirhash1[name]; !ok {
+	for name, _ := range dirlist2 {
+		if _, ok := dirlist1[name]; !ok {
 			fmt.Printf("A\t%s\n", name)
 		}
 	}
