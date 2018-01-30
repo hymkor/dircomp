@@ -60,7 +60,7 @@ func GetDirHash(dir string) (map[string]string, error) {
 
 func main1(args []string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("Usage: dirdiff DIR1 DIR2")
+		return fmt.Errorf("Usage: %s DIR1 DIR2", os.Args[0])
 	}
 	dirhash1, err := GetDirHash(args[0])
 	if err != nil {
