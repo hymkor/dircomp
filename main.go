@@ -74,15 +74,15 @@ func main1(args []string) error {
 	for name, hash1 := range dirhash1 {
 		if hash2, ok := dirhash2[name]; ok {
 			if hash1 != hash2 {
-				fmt.Printf("%s: differs\n", name)
+				fmt.Printf("M\t%s\n", name)
 			}
 		} else {
-			fmt.Printf("%s: not found in %s\n", name, args[1])
+			fmt.Printf("D\t%s\n", name)
 		}
 	}
 	for name, _ := range dirhash2 {
 		if _, ok := dirhash1[name]; !ok {
-			fmt.Printf("%s: not found in %s\n", name, args[0])
+			fmt.Printf("A\t%s\n", name)
 		}
 	}
 	return nil
