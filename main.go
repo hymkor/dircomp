@@ -1,11 +1,10 @@
 package main
 
 import (
-	"crypto/md5"
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,13 +12,42 @@ import (
 
 var option_i = flag.String("i", "*", "compared files pattern")
 
-func GetFileHash(fname string) (string, error) {
-	data, err := ioutil.ReadFile(fname)
+func AreSameFiles(fname1, fname2 string) (bool, error) {
+	fd1, err := os.Open(fname1)
 	if err != nil {
-		return "", err
+		return false, err
 	}
-	sum := md5.Sum(data)
-	return string(sum[:]), nil
+	defer fd1.Close()
+
+	fd2, err := os.Open(fname2)
+	if err != nil {
+		return false, err
+	}
+	defer fd2.Close()
+
+	r1 := bufio.NewReader(fd1)
+	r2 := bufio.NewReader(fd2)
+	for {
+		b1, err1 := r1.ReadByte()
+		b2, err2 := r2.ReadByte()
+
+		if err1 == io.EOF && err2 == io.EOF {
+			return true, nil
+		}
+		if err1 == io.EOF || err2 == io.EOF {
+			return false, nil
+		}
+		if err1 != nil {
+			return false, err1
+		}
+		if err2 != nil {
+			return false, err2
+		}
+		if b1 != b2 {
+			return false, nil
+		}
+	}
+
 }
 
 type FileT struct {
@@ -31,15 +59,7 @@ func (file1 FileT) Equals(file2 FileT) (bool, error) {
 	if file1.Size != file2.Size {
 		return false, nil
 	}
-	hash1, err := GetFileHash(file1.Path)
-	if err != nil {
-		return false, err
-	}
-	hash2, err := GetFileHash(file2.Path)
-	if err != nil {
-		return false, err
-	}
-	return hash1 == hash2, nil
+	return AreSameFiles(file1.Path, file2.Path)
 }
 
 func GetDirList(dir string) (map[string]FileT, error) {
